@@ -1,0 +1,40 @@
+﻿<Window x:Class="NeosCSInteractive.SmartPad.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NeosCSInteractive.SmartPad"
+        xmlns:editor="clr-namespace:RoslynPad.Editor;assembly=RoslynPad.Editor.Windows"
+        mc:Ignorable="d"
+        Title="NCSI SmartPad" Height="600" Width="1000"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed">
+    <TabControl>
+        <TabItem Header="Script">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Height="30" Orientation="Horizontal" Margin="10,5,10,5" >
+                    <Button Width="90" Content="Run" Click="RunButton_Click"></Button>
+                </StackPanel>
+                <Grid DockPanel.Dock="Bottom">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" MinHeight="50" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="50" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <editor:RoslynCodeEditor x:Name="scriptEditor" ShowLineNumbers="True" Loaded="ScriptEditor_Loaded" />
+                    </Grid>
+                    <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" />
+                    <DockPanel Grid.Row="2">
+                        <Label Content="Output" DockPanel.Dock="Top" />
+                        <RichTextBox x:Name="outputTextBox" />
+                    </DockPanel>
+                </Grid>
+            </DockPanel>
+        </TabItem>
+        <TabItem Header="REPL">
+
+        </TabItem>
+    </TabControl>
+</Window>
