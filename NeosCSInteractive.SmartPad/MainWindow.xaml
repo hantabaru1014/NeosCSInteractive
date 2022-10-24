@@ -5,15 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NeosCSInteractive.SmartPad"
         xmlns:editor="clr-namespace:RoslynPad.Editor;assembly=RoslynPad.Editor.Windows"
+        xmlns:converters="clr-namespace:NeosCSInteractive.SmartPad.Converters"
         mc:Ignorable="d"
         Title="NCSI SmartPad" Height="600" Width="1000"
         Loaded="Window_Loaded"
         Closed="Window_Closed">
+    <Window.DataContext>
+        <local:MainWindowViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <converters:InverseBoolConverter x:Key="InverseBool" />
+    </Window.Resources>
     <TabControl>
         <TabItem Header="Script">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Height="30" Orientation="Horizontal" Margin="10,5,10,5" >
-                    <Button Width="90" Content="Run" Click="RunButton_Click"></Button>
+                    <Button Width="90" Content="Run" Click="RunButton_Click" IsEnabled="{Binding IsConnected}"></Button>
                 </StackPanel>
                 <Grid DockPanel.Dock="Bottom">
                     <Grid.RowDefinitions>
@@ -23,18 +30,41 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                        <editor:RoslynCodeEditor x:Name="scriptEditor" ShowLineNumbers="True" Loaded="ScriptEditor_Loaded" />
+                        <editor:RoslynCodeEditor x:Name="scriptEditor" ShowLineNumbers="True" Loaded="ScriptEditor_Loaded" FontSize="{Binding ScriptEditorFontSize}" />
                     </Grid>
                     <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" />
                     <DockPanel Grid.Row="2">
                         <Label Content="Output" DockPanel.Dock="Top" />
-                        <RichTextBox x:Name="outputTextBox" />
+                        <RichTextBox x:Name="outputTextBox" FontSize="{Binding ScriptOutputFontSize}" IsReadOnly="True" />
                     </DockPanel>
                 </Grid>
             </DockPanel>
         </TabItem>
         <TabItem Header="REPL">
 
+        </TabItem>
+        <TabItem Header="Options">
+            <StackPanel Margin="15">
+                <GroupBox Header="WebSocket Connection">
+                    <StackPanel>
+                        <Label Content="Address:"/>
+                        <TextBox Text="{Binding Address}" IsReadOnly="{Binding IsConnected}"/>
+                        <Label Content="Password:"/>
+                        <TextBox Text="{Binding Password}" IsReadOnly="{Binding IsConnected}"/>
+                        <Label />
+                        <Button Content="Connect" IsEnabled="{Binding IsConnected, Converter={StaticResource InverseBool}}" Click="ConnectButton_Click"/>
+                        <Button Content="Disconnect" IsEnabled="{Binding IsConnected}" Click="DisconnectButton_Click"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="Script Panel">
+                    <StackPanel>
+                        <Label Content="Editor FontSize:"/>
+                        <TextBox />
+                        <Label Content="Output FontSize:"/>
+                        <TextBox />
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
         </TabItem>
     </TabControl>
 </Window>

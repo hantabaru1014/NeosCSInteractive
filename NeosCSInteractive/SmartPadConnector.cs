@@ -41,9 +41,14 @@ namespace NeosCSInteractive
 
         private WebSocketServer server;
 
-        public SmartPadConnector(int port)
+        public SmartPadConnector(int port, string userId, string password)
         {
-            server = new WebSocketServer(port);
+            server = new WebSocketServer(port == 0 ? NetUtils.GetAvailablePort() : port);
+            server.AuthenticationSchemes = WebSocketSharp.Net.AuthenticationSchemes.Digest;
+            server.UserCredentialsFinder = id =>
+            {
+                return id.Name == userId ? new WebSocketSharp.Net.NetworkCredential(userId, password) : null;
+            };
             server.AddWebSocketService<WSBehavior>("/SmartPad");
         }
 

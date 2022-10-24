@@ -27,14 +27,19 @@ namespace NeosCSInteractive.SmartPad
     /// </summary>
     public partial class MainWindow : Window
     {
-        private RoslynHostWithGlobals scriptHost;
+        private MainWindowViewModel viewModel = new MainWindowViewModel();
         private WebSocket? webSocket;
+        public Dictionary<string, string> ParsedCmdLineArgs { get; private set; } = new Dictionary<string, string>();
 
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = viewModel;
+        }
 
-            scriptHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
+        private void ScriptEditor_Loaded(object sender, RoutedEventArgs e)
+        {
+            var scriptHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
             {
                 Assembly.Load("RoslynPad.Roslyn.Windows"),
                 Assembly.Load("RoslynPad.Editor.Windows"),
@@ -48,18 +53,19 @@ namespace NeosCSInteractive.SmartPad
                 typeof(FrooxEngine.Engine),
                 typeof(BaseX.color),
             }));
-
-            InitWebSocketClient();
-        }
-
-        private void ScriptEditor_Loaded(object sender, RoutedEventArgs e)
-        {
             scriptEditor.Initialize(scriptHost, new ClassificationHighlightColors(), Directory.GetCurrentDirectory(), string.Empty);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            webSocket?.Connect();
+            ParseCommandLineArgs();
+            CmdLineArgsToViewModel();
+
+            if (!viewModel.Address.IsNullOrEmpty() && !viewModel.Password.IsNullOrEmpty())
+            {
+                InitWebSocketClient();
+                webSocket?.Connect();
+            }
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -67,10 +73,66 @@ namespace NeosCSInteractive.SmartPad
             webSocket?.Close();
         }
 
+        private void ParseCommandLineArgs()
+        {
+            var parsedArgs = new Dictionary<string, string>();
+            var args = Environment.GetCommandLineArgs();
+            for (var i=1; i < args.Length; i++)
+            {
+                if (args.Length == i+1 || args[i + 1].StartsWith("-"))
+                {
+                    parsedArgs.Add(args[i].ToLower(), string.Empty);
+                }
+                else
+                {
+                    parsedArgs.Add(args[i].ToLower(), args[i + 1]);
+                    i++;
+                }
+            }
+            ParsedCmdLineArgs = parsedArgs;
+        }
+
+        private void CmdLineArgsToViewModel()
+        {
+            if (ParsedCmdLineArgs.TryGetValue("-port", out var port))
+            {
+                viewModel.Address = $"ws://localhost:{port}/SmartPad";
+            }
+            if (ParsedCmdLineArgs.TryGetValue("-address", out var address))
+            {
+                viewModel.Address = address;
+            }
+            if (ParsedCmdLineArgs.TryGetValue("-password", out var pass))
+            {
+                viewModel.Password = pass;
+            }
+        }
+
         private void InitWebSocketClient()
         {
-            webSocket = new WebSocket("ws://localhost:51014/SmartPad");
+            webSocket = new WebSocket(viewModel.Address);
+            webSocket.SetCredentials("smartpad", viewModel.Password, false);
             webSocket.OnMessage += WebSocket_OnMessage;
+            webSocket.OnOpen += WebSocket_OnOpen;
+            webSocket.OnClose += WebSocket_OnClose;
+            webSocket.OnError += WebSocket_OnError;
+        }
+
+        private void WebSocket_OnError(object? sender, WebSocketSharp.ErrorEventArgs e)
+        {
+            AddOutputMessage(new LogMessage(LogMessage.MessageType.Error, $"[WebSocket Error] {e.Message}"));
+        }
+
+        private void WebSocket_OnClose(object? sender, CloseEventArgs e)
+        {
+            viewModel.IsConnected = false;
+            AddOutputMessage(new LogMessage(LogMessage.MessageType.Info, "[WebSocket] Disconnected"));
+        }
+
+        private void WebSocket_OnOpen(object? sender, EventArgs e)
+        {
+            viewModel.IsConnected = true;
+            AddOutputMessage(new LogMessage(LogMessage.MessageType.Info, "[WebSocket] Connected"));
         }
 
         private void WebSocket_OnMessage(object? sender, MessageEventArgs e)
@@ -84,6 +146,9 @@ namespace NeosCSInteractive.SmartPad
                         var args = command.GetArgs<OutputArgs>();
                         if (args.ConsoleId == "SmartPad:Script")
                             AddOutputMessage(args.Message);
+                        break;
+                    case CommandJson.CommandType.CloseClient:
+                        Close();
                         break;
                     default:
                         break;
@@ -100,13 +165,13 @@ namespace NeosCSInteractive.SmartPad
             switch (message.Type)
             {
                 case LogMessage.MessageType.Info:
-                    AppendOutputText($"{message.Time.ToLongTimeString()} [INFO] {message.Message}\n");
+                    AppendOutputText($"{message.Time.ToLongTimeString()} [INFO] {message.Message}");
                     break;
                 case LogMessage.MessageType.Warning:
-                    AppendOutputText($"{message.Time.ToLongTimeString()} [WARN] {message.Message}\n");
+                    AppendOutputText($"{message.Time.ToLongTimeString()} [WARN] {message.Message}");
                     break;
                 case LogMessage.MessageType.Error:
-                    AppendOutputText($"{message.Time.ToLongTimeString()} [ERROR] {message.Message}\n");
+                    AppendOutputText($"{message.Time.ToLongTimeString()} [ERROR] {message.Message}");
                     break;
                 default:
                     break;
@@ -117,7 +182,7 @@ namespace NeosCSInteractive.SmartPad
         {
             Dispatcher.Invoke(() =>
             {
-                outputTextBox.AppendText(text);
+                outputTextBox.AppendText(text+"\r");
             });
         }
 
@@ -135,6 +200,17 @@ namespace NeosCSInteractive.SmartPad
             ClearOutputMessages();
             var cmd = new CommandJson(CommandJson.CommandType.RunScript, new RunScriptArgs("SmartPad:Script", scriptEditor.Text));
             webSocket.Send(cmd.Serialize());
+        }
+
+        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            InitWebSocketClient();
+            webSocket?.Connect();
+        }
+
+        private void DisconnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            webSocket?.Close();
         }
     }
 }

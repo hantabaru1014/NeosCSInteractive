@@ -11,19 +11,23 @@ namespace NeosCSInteractive
     {
         public override string Name => "NeosCSInteractive";
         public override string Author => "hantabaru1014";
-        public override string Version => "1.0.0";
+        public override string Version => "0.1.0";
         public override string Link => "https://github.com/hantabaru1014/NeosCSInteractive";
 
         private static Text outputText;
         private static SmartPadConnector padConnector;
+        private static string padConnectorPassword;
 
         public override void OnEngineInit()
         {
             Harmony harmony = new Harmony("net.hantabaru1014.NeosCSInteractive");
             harmony.PatchAll();
 
-            padConnector = new SmartPadConnector(51014);
-            Msg($"SmartPad Connector Listen: {padConnector.Start()}");
+            padConnectorPassword = NetUtils.CreatePassword(25);
+            padConnector = new SmartPadConnector(0, "smartpad", padConnectorPassword);
+#if DEBUG
+            Msg($"SmartPad Connector Listen: {padConnector.Start()}, Password: {padConnectorPassword}");
+#endif
         }
 
         [HarmonyPatch(typeof(UserspaceScreensManager))]

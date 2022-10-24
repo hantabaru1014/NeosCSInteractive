@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Converters;
 
@@ -18,6 +16,8 @@ namespace NeosCSInteractive.Shared.JsonProtocols
 
             // Server -> Client
             Output,
+            EnvironmentInfo,
+            CloseClient,
         }
         
         public CommandType Command { get; set; }

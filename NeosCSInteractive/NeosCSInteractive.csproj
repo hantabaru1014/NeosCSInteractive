@@ -11,7 +11,7 @@
     <CopyToMods Condition="'$(CopyToMods)'==''">true</CopyToMods>
     <DebugSymbols Condition="'$(Configuration)'=='Release'">false</DebugSymbols>
     <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
-    <Version>1.0.0</Version>
+    <Version>0.1.0</Version>
     <Authors>hantabaru1014</Authors>
   </PropertyGroup>
   <ItemGroup>
@@ -39,10 +39,18 @@
     <Reference Include="WebSocketSharp">
       <HintPath>$(NeosPath)Neos_Data\Managed\websocket-sharp.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web">
+      <HintPath>$(NeosPath)Neos_Data\Managed\System.Web.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CopyToMods)'=='true'">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(NeosPath)nml_mods" />
-    <Message Text="Copied $(TargetFileName) to $(NeosPath)nml_mods" Importance="high" />
+    <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.CSharp.Scripting.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Copy SourceFiles="$(TargetDir)NeosCSInteractive.Shared.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Message Text="Copied $(TargetFileName) and dependency dlls to $(NeosPath)" Importance="high" />
   </Target>
 </Project>
