@@ -4,6 +4,9 @@ using NeosModLoader;
 using BaseX;
 using FrooxEngine.UIX;
 using NeosCSInteractive.Shared;
+using System.IO;
+using System;
+using System.Diagnostics;
 
 namespace NeosCSInteractive
 {
@@ -16,18 +19,31 @@ namespace NeosCSInteractive
 
         private static Text outputText;
         private static SmartPadConnector padConnector;
-        private static string padConnectorPassword;
+        private static ModConfiguration config;
+
+        [AutoRegisterConfigKey]
+        public static readonly ModConfigurationKey<bool> AlwaysRunningServer = new ModConfigurationKey<bool>("AlwaysRunningServer", "Keep the WebSocket server running even when the SmartPad is not open", () => false);
+
+        public static string SmartPadExePath { get => Path.Combine(Environment.CurrentDirectory, "Tools\\NeosCSInteractive.SmartPad\\NeosCSInteractive.SmartPad.exe"); }
 
         public override void OnEngineInit()
         {
+            config = GetConfiguration();
+
             Harmony harmony = new Harmony("net.hantabaru1014.NeosCSInteractive");
             harmony.PatchAll();
 
-            padConnectorPassword = NetUtils.CreatePassword(25);
-            padConnector = new SmartPadConnector(0, "smartpad", padConnectorPassword);
-#if DEBUG
-            Msg($"SmartPad Connector Listen: {padConnector.Start()}, Password: {padConnectorPassword}");
-#endif
+            Engine.Current.OnShutdownRequest += Engine_OnShutdownRequest;
+
+            if (config.GetValue(AlwaysRunningServer))
+            {
+                CreateConnectorIfNotExist();
+            }
+        }
+
+        private void Engine_OnShutdownRequest(string obj)
+        {
+            padConnector?.Stop();
         }
 
         [HarmonyPatch(typeof(UserspaceScreensManager))]
@@ -93,6 +109,10 @@ namespace NeosCSInteractive
                 outputText.Content.Value = string.Empty;
                 ScriptUtils.RunScript(sourceField.Text.Content.Value, AddOutput);
             };
+            launchPadBtn.LocalPressed += (IButton btn, ButtonEventData data) =>
+            {
+                LaunchSmartPad();
+            };
         }
 
         private static void AddOutput(LogMessage message)
@@ -117,6 +137,29 @@ namespace NeosCSInteractive
                         break;
                 }
             });
+        }
+
+        private static void CreateConnectorIfNotExist()
+        {
+            if (padConnector?.IsListening ?? false) return;
+            padConnector = new SmartPadConnector(0, NetUtils.CreatePassword(25), !config.GetValue(AlwaysRunningServer));
+            padConnector.Start();
+            if (config.GetValue(AlwaysRunningServer))
+            {
+                Msg($"SmartPad Connector Listen: {padConnector.Url}, Password: {padConnector.Password}");
+            }
+        }
+
+        private static void LaunchSmartPad()
+        {
+            if (!File.Exists(SmartPadExePath))
+            {
+                Error("SmartPad exe does not exist!");
+                return;
+            }
+            if (FileUtils.IsProcessRunning(SmartPadExePath)) return;
+            CreateConnectorIfNotExist();
+            Process.Start(SmartPadExePath, $"-address \"{padConnector.Url}\" -password \"{padConnector.Password}\"");
         }
     }
 }

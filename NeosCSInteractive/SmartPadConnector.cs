@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using NeosCSInteractive.Shared.JsonProtocols;
+using NeosCSInteractive.Shared;
+using BaseX;
 
 namespace NeosCSInteractive
 {
@@ -13,6 +15,8 @@ namespace NeosCSInteractive
     {
         class WSBehavior : WebSocketBehavior
         {
+            public event Action<CloseEventArgs> OnDisconnected;
+
             protected override void OnMessage(MessageEventArgs e)
             {
                 try
@@ -34,33 +38,63 @@ namespace NeosCSInteractive
                 }
                 catch (Exception ex)
                 {
-                    // TODO: log
+                    UniLog.Error($"[NeosModLoader/NeosCSInteractive] [WebSocket Server Error] {ex.Message}");
                 }
+            }
+
+            protected override void OnClose(CloseEventArgs e)
+            {
+                UniLog.Log("[NeosModLoader/NeosCSInteractive] [WebSocket Server] OnClose");
+                OnDisconnected?.Invoke(e);
+            }
+
+            protected override void OnOpen()
+            {
+                UniLog.Log("[NeosModLoader/NeosCSInteractive] [WebSocket Server] OnOpen");
+            }
+
+            public void CloseClients()
+            {
+                var outCmd = new CommandJson(CommandJson.CommandType.CloseClient, null);
+                Sessions.Broadcast(outCmd.Serialize());
             }
         }
 
         private WebSocketServer server;
+        private WSBehavior wsBehavior;
 
-        public SmartPadConnector(int port, string userId, string password)
+        public bool IsListening { get => server?.IsListening ?? false; }
+        public string Url { get => $"ws://localhost:{server.Port}/SmartPad"; }
+        public string UserId { get => "smartpad"; }
+        public string Password { get; private set; }
+
+        public SmartPadConnector(int port, string password, bool autoStop)
         {
             server = new WebSocketServer(port == 0 ? NetUtils.GetAvailablePort() : port);
             server.AuthenticationSchemes = WebSocketSharp.Net.AuthenticationSchemes.Digest;
+            Password = password;
             server.UserCredentialsFinder = id =>
             {
-                return id.Name == userId ? new WebSocketSharp.Net.NetworkCredential(userId, password) : null;
+                return id.Name == UserId ? new WebSocketSharp.Net.NetworkCredential(UserId, Password) : null;
             };
-            server.AddWebSocketService<WSBehavior>("/SmartPad");
+            wsBehavior = new WSBehavior();
+            wsBehavior.OnDisconnected += e =>
+            {
+                if (autoStop) server.Stop();
+            };
+            server.AddWebSocketService("/SmartPad", () => wsBehavior);
         }
 
         public string Start()
         {
-            server.Start();
-            return $"ws://localhost:{server.Port}/SmartPad";
+            server?.Start();
+            return Url;
         }
 
         public void Stop()
         {
-            server.Stop();
+            wsBehavior?.CloseClients();
+            server?.Stop();
         }
 
         public void Dispose()
