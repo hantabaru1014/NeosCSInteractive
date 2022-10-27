@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NeosCSInteractive.Shared.JsonProtocols
+﻿namespace NeosCSInteractive.Shared.JsonProtocols
 {
     public class EnvironmentInfoArgs
     {
-        public string WorkingDirectory { get; set; }
         public string ScriptDirectory { get; set; }
         public string[] Imports { get; set; }
+        public string[] ReferenceAssemblies { get; set; }
+
+        public EnvironmentInfoArgs(string scriptDirectory, string[] imports, string[] referenceAssemblies)
+        {
+            ScriptDirectory = scriptDirectory;
+            Imports = imports;
+            ReferenceAssemblies = referenceAssemblies;
+        }
     }
 }

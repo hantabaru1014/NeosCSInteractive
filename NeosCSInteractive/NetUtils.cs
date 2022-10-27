@@ -17,7 +17,7 @@ namespace NeosCSInteractive
 
         public static string CreatePassword(int length)
         {
-            return System.Web.Security.Membership.GeneratePassword(length, 0);
+            return System.Web.Security.Membership.GeneratePassword(length, 0).Replace('"', '!').Replace('\'', '#');
         }
     }
 }

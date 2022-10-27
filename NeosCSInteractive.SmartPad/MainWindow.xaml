@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:NeosCSInteractive.SmartPad"
         xmlns:editor="clr-namespace:RoslynPad.Editor;assembly=RoslynPad.Editor.Windows"
         xmlns:converters="clr-namespace:NeosCSInteractive.SmartPad.Converters"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         Title="NCSI SmartPad" Height="600" Width="1000"
         Loaded="Window_Loaded"
@@ -59,9 +60,9 @@
                 <GroupBox Header="Script Panel">
                     <StackPanel>
                         <Label Content="Editor FontSize:"/>
-                        <TextBox />
+                        <xctk:IntegerUpDown Value="{Binding ScriptEditorFontSize}" />
                         <Label Content="Output FontSize:"/>
-                        <TextBox />
+                        <xctk:IntegerUpDown Value="{Binding ScriptOutputFontSize}" />
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

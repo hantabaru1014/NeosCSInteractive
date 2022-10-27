@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.4.0" />
     <PackageReference Include="RoslynPad.Editor.Windows" Version="1.2.0" />
   </ItemGroup>
 
@@ -21,7 +22,7 @@
 
   <ItemGroup>
     <Reference Include="WebSocketSharp">
-      <HintPath>$(NeosPath)Neos_Data\Managed\websocket-sharp.dll</HintPath>
+      <HintPath>..\lib\websocket-sharp.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>$(NeosPath)Neos_Data\Managed\Newtonsoft.Json.dll</HintPath>

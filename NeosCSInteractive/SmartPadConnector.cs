@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using NeosCSInteractive.Shared.JsonProtocols;
@@ -13,9 +11,14 @@ namespace NeosCSInteractive
 {
     internal class SmartPadConnector : IDisposable
     {
-        class WSBehavior : WebSocketBehavior
+        class WSBehavior : WebSocketBehavior // セッション毎にひとつインスタンスが作られる
         {
             public event Action<CloseEventArgs> OnDisconnected;
+
+            public WSBehavior(Action<CloseEventArgs> onDisconnected)
+            {
+                OnDisconnected = onDisconnected;
+            }
 
             protected override void OnMessage(MessageEventArgs e)
             {
@@ -44,24 +47,22 @@ namespace NeosCSInteractive
 
             protected override void OnClose(CloseEventArgs e)
             {
-                UniLog.Log("[NeosModLoader/NeosCSInteractive] [WebSocket Server] OnClose");
                 OnDisconnected?.Invoke(e);
             }
 
             protected override void OnOpen()
             {
-                UniLog.Log("[NeosModLoader/NeosCSInteractive] [WebSocket Server] OnOpen");
-            }
-
-            public void CloseClients()
-            {
-                var outCmd = new CommandJson(CommandJson.CommandType.CloseClient, null);
-                Sessions.Broadcast(outCmd.Serialize());
+                var outCmd = new CommandJson(CommandJson.CommandType.EnvironmentInfo,
+                    new EnvironmentInfoArgs(
+                        FileUtils.ScriptDirectory,
+                        ScriptUtils.Imports,
+                        ScriptUtils.ReferenceAssemblies.Select(x => x.Location).ToArray()
+                    ));
+                Send(outCmd.Serialize());
             }
         }
 
         private WebSocketServer server;
-        private WSBehavior wsBehavior;
 
         public bool IsListening { get => server?.IsListening ?? false; }
         public string Url { get => $"ws://localhost:{server.Port}/SmartPad"; }
@@ -77,12 +78,7 @@ namespace NeosCSInteractive
             {
                 return id.Name == UserId ? new WebSocketSharp.Net.NetworkCredential(UserId, Password) : null;
             };
-            wsBehavior = new WSBehavior();
-            wsBehavior.OnDisconnected += e =>
-            {
-                if (autoStop) server.Stop();
-            };
-            server.AddWebSocketService("/SmartPad", () => wsBehavior);
+            server.AddWebSocketService("/SmartPad", () => new WSBehavior(_ => { if (autoStop && server.WebSocketServices.SessionCount <= 1) server.Stop(); }));
         }
 
         public string Start()
@@ -93,13 +89,20 @@ namespace NeosCSInteractive
 
         public void Stop()
         {
-            wsBehavior?.CloseClients();
+            UniLog.Log("[NeosModLoader/NeosCSInteractive] [WebSocket Server] Stopping...");
+            CloseClients();
             server?.Stop();
         }
 
         public void Dispose()
         {
             Stop();
+        }
+
+        public void CloseClients()
+        {
+            var outCmd = new CommandJson(CommandJson.CommandType.CloseClient, null);
+            server?.WebSocketServices.Broadcast(outCmd.Serialize());
         }
     }
 }

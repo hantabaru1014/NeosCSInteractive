@@ -39,21 +39,21 @@ namespace NeosCSInteractive.SmartPad
 
         private void ScriptEditor_Loaded(object sender, RoutedEventArgs e)
         {
+            
+        }
+
+        private void InitializeScriptEditor(string scriptDirectory, string[] imports, string[] referenceAssemblies)
+        {
             var scriptHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
             {
                 Assembly.Load("RoslynPad.Roslyn.Windows"),
                 Assembly.Load("RoslynPad.Editor.Windows"),
-            }, RoslynHostReferences.NamespaceDefault.With(assemblyReferences: new[]
-            {
-                typeof(object).Assembly,
-                typeof(Enumerable).Assembly,
-            }, typeNamespaceImports: new[]
-            {
-                typeof(InjectGlobals),
-                typeof(FrooxEngine.Engine),
-                typeof(BaseX.color),
-            }));
-            scriptEditor.Initialize(scriptHost, new ClassificationHighlightColors(), Directory.GetCurrentDirectory(), string.Empty);
+            }, RoslynHostReferences.NamespaceDefault.With(
+                imports: imports,
+                assemblyPathReferences: referenceAssemblies
+            ));
+            scriptEditor.Initialize(scriptHost, new ClassificationHighlightColors(), scriptDirectory, scriptEditor.Text);
+            AddOutputMessage(new LogMessage(LogMessage.MessageType.Info, "Ready"));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -64,7 +64,7 @@ namespace NeosCSInteractive.SmartPad
             if (!viewModel.Address.IsNullOrEmpty() && !viewModel.Password.IsNullOrEmpty())
             {
                 InitWebSocketClient();
-                webSocket?.Connect();
+                webSocket?.ConnectAsync();
             }
         }
 
@@ -148,7 +148,14 @@ namespace NeosCSInteractive.SmartPad
                             AddOutputMessage(args.Message);
                         break;
                     case CommandJson.CommandType.CloseClient:
-                        Close();
+                        CloseWindow();
+                        break;
+                    case CommandJson.CommandType.EnvironmentInfo:
+                        Dispatcher.Invoke(() =>
+                        {
+                            var args2 = command.GetArgs<EnvironmentInfoArgs>();
+                            InitializeScriptEditor(args2.ScriptDirectory, args2.Imports, args2.ReferenceAssemblies);
+                        });
                         break;
                     default:
                         break;
@@ -205,12 +212,20 @@ namespace NeosCSInteractive.SmartPad
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             InitWebSocketClient();
-            webSocket?.Connect();
+            webSocket?.ConnectAsync();
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
-            webSocket?.Close();
+            webSocket?.CloseAsync();
+        }
+
+        private void CloseWindow()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                Close();
+            });
         }
     }
 }

@@ -24,8 +24,6 @@ namespace NeosCSInteractive
         [AutoRegisterConfigKey]
         public static readonly ModConfigurationKey<bool> AlwaysRunningServer = new ModConfigurationKey<bool>("AlwaysRunningServer", "Keep the WebSocket server running even when the SmartPad is not open", () => false);
 
-        public static string SmartPadExePath { get => Path.Combine(Environment.CurrentDirectory, "Tools\\NeosCSInteractive.SmartPad\\NeosCSInteractive.SmartPad.exe"); }
-
         public override void OnEngineInit()
         {
             config = GetConfiguration();
@@ -152,14 +150,14 @@ namespace NeosCSInteractive
 
         private static void LaunchSmartPad()
         {
-            if (!File.Exists(SmartPadExePath))
+            if (!File.Exists(FileUtils.SmartPadExePath))
             {
                 Error("SmartPad exe does not exist!");
                 return;
             }
-            if (FileUtils.IsProcessRunning(SmartPadExePath)) return;
+            if (FileUtils.IsProcessRunning(FileUtils.SmartPadExePath)) return;
             CreateConnectorIfNotExist();
-            Process.Start(SmartPadExePath, $"-address \"{padConnector.Url}\" -password \"{padConnector.Password}\"");
+            Process.Start(FileUtils.SmartPadExePath, $"-address \"{padConnector.Url}\" -password \"{padConnector.Password}\"");
         }
     }
 }
