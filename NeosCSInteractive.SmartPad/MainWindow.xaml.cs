@@ -19,6 +19,7 @@ using System.Reflection;
 using NeosCSInteractive.Shared;
 using WebSocketSharp;
 using NeosCSInteractive.Shared.JsonProtocols;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace NeosCSInteractive.SmartPad
 {
@@ -29,6 +30,8 @@ namespace NeosCSInteractive.SmartPad
     {
         private MainWindowViewModel viewModel = new MainWindowViewModel();
         private WebSocket? webSocket;
+        private string scriptDirectoryPath = "";
+
         public Dictionary<string, string> ParsedCmdLineArgs { get; private set; } = new Dictionary<string, string>();
 
         public MainWindow()
@@ -37,13 +40,9 @@ namespace NeosCSInteractive.SmartPad
             DataContext = viewModel;
         }
 
-        private void ScriptEditor_Loaded(object sender, RoutedEventArgs e)
-        {
-            
-        }
-
         private void InitializeScriptEditor(string scriptDirectory, string[] imports, string[] referenceAssemblies)
         {
+            scriptDirectoryPath = scriptDirectory;
             var scriptHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
             {
                 Assembly.Load("RoslynPad.Roslyn.Windows"),
@@ -226,6 +225,33 @@ namespace NeosCSInteractive.SmartPad
             {
                 Close();
             });
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CommonOpenFileDialog("Load Script File");
+            dialog.DefaultDirectory = scriptDirectoryPath;
+            dialog.Filters.Add(new CommonFileDialogFilter("C# Script File", "*.csx"));
+            dialog.Filters.Add(new CommonFileDialogFilter("C# Source Code", "*.cs"));
+            dialog.Filters.Add(new CommonFileDialogFilter("All Files", "*.*"));
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                scriptEditor.Text = File.ReadAllText(dialog.FileName, Encoding.UTF8);
+            }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CommonSaveFileDialog("Save Script File");
+            dialog.DefaultDirectory = scriptDirectoryPath;
+            dialog.DefaultExtension = ".csx";
+            dialog.Filters.Add(new CommonFileDialogFilter("C# Script File", "*.csx"));
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                File.WriteAllText(dialog.FileName, scriptEditor.Text, Encoding.UTF8);
+            }
         }
     }
 }

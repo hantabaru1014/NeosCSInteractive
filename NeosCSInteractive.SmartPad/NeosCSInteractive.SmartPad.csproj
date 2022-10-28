@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.4.0" />
+    <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.4" />
     <PackageReference Include="RoslynPad.Editor.Windows" Version="1.2.0" />
   </ItemGroup>
 

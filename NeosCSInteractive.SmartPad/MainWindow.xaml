@@ -20,8 +20,15 @@
     <TabControl>
         <TabItem Header="Script">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Height="30" Orientation="Horizontal" Margin="10,5,10,5" >
+                <StackPanel DockPanel.Dock="Top" Height="30" Orientation="Horizontal" Margin="10,5,10,5">
+                    <StackPanel.Resources>
+                        <Style TargetType="{x:Type Button}">
+                            <Setter Property="Margin" Value="5,0,0,0"/>
+                        </Style>
+                    </StackPanel.Resources>
                     <Button Width="90" Content="Run" Click="RunButton_Click" IsEnabled="{Binding IsConnected}"></Button>
+                    <Button Width="90" Content="Load" Click="LoadButton_Click" />
+                    <Button Width="90" Content="Save" Click="SaveButton_Click" />
                 </StackPanel>
                 <Grid DockPanel.Dock="Bottom">
                     <Grid.RowDefinitions>
@@ -31,7 +38,7 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                        <editor:RoslynCodeEditor x:Name="scriptEditor" ShowLineNumbers="True" Loaded="ScriptEditor_Loaded" FontSize="{Binding ScriptEditorFontSize}" />
+                        <editor:RoslynCodeEditor x:Name="scriptEditor" ShowLineNumbers="True" FontSize="{Binding ScriptEditorFontSize}" />
                     </Grid>
                     <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" />
                     <DockPanel Grid.Row="2">
