@@ -90,14 +90,14 @@ namespace NeosCSInteractive
             sourcePanel.Slot.GetComponent<LayoutElement>().FlexibleHeight.Value = 0.7f;
             var sourceField = ui.TextField("Msg(\"Hello from Roslyn!!!\");");
             sourceField.Text.Align = Alignment.TopLeft;
-            //ui.FitContent(SizeFit.PreferredSize);
             ui.NestOut();
 
             var outputPanel = ui.Panel(color.DarkGray);
             outputPanel.Slot.GetComponent<LayoutElement>().FlexibleHeight.Value = 0.3f;
             ui.ScrollArea(Alignment.TopLeft);
-            outputText = ui.Text("", false);
-            outputText.Align = Alignment.TopLeft;
+            ui.VerticalLayout(5, 5, Alignment.TopLeft);
+            ui.FitContent(SizeFit.Disabled, SizeFit.MinSize);
+            outputText = ui.Text("", false, Alignment.TopLeft);
             outputText.Size.Value = 32;
             ui.NestOut();
             ui.NestOut();
