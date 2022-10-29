@@ -5,8 +5,8 @@ using BaseX;
 using FrooxEngine.UIX;
 using NeosCSInteractive.Shared;
 using System.IO;
-using System;
 using System.Diagnostics;
+using WebSocketSharp;
 
 namespace NeosCSInteractive
 {
@@ -22,11 +22,16 @@ namespace NeosCSInteractive
         private static ModConfiguration config;
 
         [AutoRegisterConfigKey]
-        public static readonly ModConfigurationKey<bool> AlwaysRunningServer = new ModConfigurationKey<bool>("AlwaysRunningServer", "Keep the WebSocket server running even when the SmartPad is not open", () => false);
+        public static readonly ModConfigurationKey<bool> AlwaysRunningServer = new ModConfigurationKey<bool>("AlwaysRunningServer", "Keep the WebSocket server running even when the SmartPad is not open. (Recommended: false)", () => false);
+        [AutoRegisterConfigKey]
+        public static readonly ModConfigurationKey<int> ServerPort = new ModConfigurationKey<int>("ServerPort", "Manually specify the WebSocket server port. (Recommended: 0 if not specified)", () => 0);
+        [AutoRegisterConfigKey]
+        public static readonly ModConfigurationKey<string> ServerPassword = new ModConfigurationKey<string>("ServerPassword", "Manually specify the WebSocket server password. (Recommended: empty if not specified)", () => "");
 
         public override void OnEngineInit()
         {
             config = GetConfiguration();
+            config.OnThisConfigurationChanged += Config_OnThisConfigurationChanged;
 
             Harmony harmony = new Harmony("net.hantabaru1014.NeosCSInteractive");
             harmony.PatchAll();
@@ -36,6 +41,17 @@ namespace NeosCSInteractive
             if (config.GetValue(AlwaysRunningServer))
             {
                 CreateConnectorIfNotExist();
+            }
+        }
+
+        private void Config_OnThisConfigurationChanged(ConfigurationChangedEvent configurationChangedEvent)
+        {
+            if (configurationChangedEvent.Key.Name == AlwaysRunningServer.Name)
+            {
+                if (padConnector is not null && config.TryGetValue(AlwaysRunningServer, out bool alwaysRunning))
+                {
+                    padConnector.AutoStop = !alwaysRunning;
+                }
             }
         }
 
@@ -140,7 +156,8 @@ namespace NeosCSInteractive
         private static void CreateConnectorIfNotExist()
         {
             if (padConnector?.IsListening ?? false) return;
-            padConnector = new SmartPadConnector(0, NetUtils.CreatePassword(25), !config.GetValue(AlwaysRunningServer));
+            var password = config.GetValue(ServerPassword).IsNullOrEmpty() ? NetUtils.CreatePassword(25) : config.GetValue(ServerPassword);
+            padConnector = new SmartPadConnector(config.GetValue(ServerPort), password, !config.GetValue(AlwaysRunningServer));
             padConnector.Start();
             if (config.GetValue(AlwaysRunningServer))
             {

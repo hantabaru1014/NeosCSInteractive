@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using NeosCSInteractive.Shared.JsonProtocols;
-using NeosCSInteractive.Shared;
 using BaseX;
 
 namespace NeosCSInteractive
@@ -68,6 +66,7 @@ namespace NeosCSInteractive
         public string Url { get => $"ws://localhost:{server.Port}/SmartPad"; }
         public string UserId { get => "smartpad"; }
         public string Password { get; private set; }
+        public bool AutoStop { get; set; }
 
         public SmartPadConnector(int port, string password, bool autoStop)
         {
@@ -78,7 +77,8 @@ namespace NeosCSInteractive
             {
                 return id.Name == UserId ? new WebSocketSharp.Net.NetworkCredential(UserId, Password) : null;
             };
-            server.AddWebSocketService("/SmartPad", () => new WSBehavior(_ => { if (autoStop && server.WebSocketServices.SessionCount <= 1) server.Stop(); }));
+            AutoStop = autoStop;
+            server.AddWebSocketService("/SmartPad", () => new WSBehavior(_ => { if (AutoStop && server.WebSocketServices.SessionCount <= 1) server.Stop(); }));
         }
 
         public string Start()
