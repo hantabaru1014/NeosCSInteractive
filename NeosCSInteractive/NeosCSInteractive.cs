@@ -17,6 +17,7 @@ namespace NeosCSInteractive
         public override string Version => "0.1.0";
         public override string Link => "https://github.com/hantabaru1014/NeosCSInteractive";
 
+        private static TextField codeEditorField;
         private static Text outputText;
         private static SmartPadConnector padConnector;
         private static ModConfiguration config;
@@ -114,6 +115,7 @@ namespace NeosCSInteractive
             sourcePanel.Slot.GetComponent<LayoutElement>().FlexibleHeight.Value = 0.7f;
             var sourceField = ui.TextField("Msg(\"Hello from Roslyn!!!\");");
             sourceField.Text.Align = Alignment.TopLeft;
+            codeEditorField = sourceField;
             ui.NestOut();
 
             var outputPanel = ui.Panel(color.DarkGray);
@@ -135,6 +137,8 @@ namespace NeosCSInteractive
             {
                 LaunchSmartPad();
             };
+
+            instance.Slot.RunInUpdates(3, () => LoadSampleScript());
         }
 
         private static void AddOutput(LogMessage message)
@@ -183,6 +187,14 @@ namespace NeosCSInteractive
             if (FileUtils.IsProcessRunning(FileUtils.SmartPadExePath)) return;
             CreateConnectorIfNotExist();
             Process.Start(FileUtils.SmartPadExePath, $"-address \"{padConnector.Url}\" -password \"{padConnector.Password}\"");
+        }
+
+        private static void LoadSampleScript()
+        {
+            if (File.Exists(FileUtils.SampleScriptPath))
+            {
+                codeEditorField.Text.Content.Value = File.ReadAllText(FileUtils.SampleScriptPath, System.Text.Encoding.UTF8);
+            }
         }
     }
 }

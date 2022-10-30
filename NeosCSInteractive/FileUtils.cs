@@ -14,6 +14,8 @@ namespace NeosCSInteractive
 
         public static string ScriptDirectory { get => Path.Combine(Environment.CurrentDirectory, "ncsi_scripts"); }
 
+        public static string SampleScriptPath { get => Path.Combine(ScriptDirectory, "DEFAULT_SAMPLE.csx"); }
+
         public static bool IsProcessRunning(string path)
         {
             var ps = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(path));
