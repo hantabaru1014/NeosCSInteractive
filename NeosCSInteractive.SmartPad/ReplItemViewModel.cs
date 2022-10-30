@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Microsoft.CodeAnalysis.Scripting;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
 using NeosCSInteractive.Shared;
-using Microsoft.CodeAnalysis.CSharp.Scripting.Hosting;
-using Microsoft.CodeAnalysis.Scripting.Hosting;
 
 namespace NeosCSInteractive.SmartPad
 {
@@ -16,13 +10,8 @@ namespace NeosCSInteractive.SmartPad
     {
         private bool _isReadOnly;
         private bool _isWaitingExecutionResult;
-        private readonly RoslynHostWithGlobals _host;
         private string? _result;
         private string _outputText = string.Empty;
-        private string scriptDirectory;
-
-        private static PrintOptions PrintOptions { get; } =
-                new PrintOptions { MemberDisplayFormat = MemberDisplayFormat.SeparateLines };
 
         public DocumentId? Id { get; private set; }
 
@@ -71,13 +60,9 @@ namespace NeosCSInteractive.SmartPad
             set => SetProperty(ref _outputText, value);
         }
 
-        public Script<object>? Script { get; private set; }
-
-        public ReplItemViewModel(RoslynHostWithGlobals host, ReplItemViewModel? previous, string scriptDirectory)
+        public ReplItemViewModel(ReplItemViewModel? previous)
         {
-            _host = host;
             Previous = previous;
-            this.scriptDirectory = scriptDirectory;
         }
 
         internal void Initialize(DocumentId id)
@@ -88,18 +73,6 @@ namespace NeosCSInteractive.SmartPad
         public bool TrySubmit()
         {
             Result = null;
-            /*Script = LastGoodPrevious?.Script?.ContinueWith(Text) ?? 
-                CSharpScript.Create(Text, ScriptOptions.Default
-                    .WithReferences(_host.DefaultReferences)
-                    .WithImports(_host.DefaultImports)
-                    .WithSourceResolver(new SourceFileResolver(new string[0], scriptDirectory)), typeof(InjectGlobals));
-            var diagnostics = Script.Compile();
-            if (diagnostics.Any(t => t.Severity == DiagnosticSeverity.Error))
-            {
-                Result = string.Join(Environment.NewLine, diagnostics.Select(FormatObject));
-                return false;
-            }*/
-
             IsReadOnly = true;
             IsWaitingExecutionResult = true;
             return true;
@@ -129,11 +102,6 @@ namespace NeosCSInteractive.SmartPad
                 default:
                     break;
             }
-        }
-
-        private static string FormatObject(object o)
-        {
-            return CSharpObjectFormatter.Instance.FormatObject(o, PrintOptions);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

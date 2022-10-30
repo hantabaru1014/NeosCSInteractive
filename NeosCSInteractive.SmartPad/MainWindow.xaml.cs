@@ -349,7 +349,7 @@ namespace NeosCSInteractive.SmartPad
         {
             if (replHost is null) return;
             replHistoryCursor = 0;
-            replItemModels.Add(new ReplItemViewModel(replHost, previous, scriptDirectoryPath));
+            replItemModels.Add(new ReplItemViewModel(previous));
         }
 
         private void ClearReplItems()
