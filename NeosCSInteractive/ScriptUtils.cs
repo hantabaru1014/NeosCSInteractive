@@ -189,6 +189,7 @@ namespace NeosCSInteractive
 
         public static string FormatObject(object o)
         {
+            if (o is null) return string.Empty;
             return CSharpObjectFormatter.Instance.FormatObject(o, PrintOptions);
         }
     }

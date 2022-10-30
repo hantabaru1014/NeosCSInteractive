@@ -109,5 +109,19 @@ namespace NeosCSInteractive.SmartPad
                 }
             }
         }
+
+        private int _ReplOutputMaxHeight = 200;
+        public int ReplOutputMaxHeight
+        {
+            get => _ReplOutputMaxHeight;
+            set
+            {
+                if (_ReplOutputMaxHeight != value)
+                {
+                    _ReplOutputMaxHeight = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
     }
 }

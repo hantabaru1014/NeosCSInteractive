@@ -262,7 +262,7 @@ namespace NeosCSInteractive.SmartPad
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new CommonOpenFileDialog("Load Script File");
-            dialog.DefaultDirectory = scriptDirectoryPath;
+            dialog.InitialDirectory = scriptDirectoryPath;
             dialog.Filters.Add(new CommonFileDialogFilter("C# Script File", "*.csx"));
             dialog.Filters.Add(new CommonFileDialogFilter("C# Source Code", "*.cs"));
             dialog.Filters.Add(new CommonFileDialogFilter("All Files", "*.*"));
@@ -276,7 +276,7 @@ namespace NeosCSInteractive.SmartPad
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new CommonSaveFileDialog("Save Script File");
-            dialog.DefaultDirectory = scriptDirectoryPath;
+            dialog.InitialDirectory = scriptDirectoryPath;
             dialog.DefaultExtension = ".csx";
             dialog.Filters.Add(new CommonFileDialogFilter("C# Script File", "*.csx"));
 

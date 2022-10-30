@@ -54,17 +54,38 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
+                                <StackPanel.Resources>
+                                    <Style TargetType="editor:RoslynCodeEditor">
+                                        <Setter Property="FontSize" Value="{Binding DataContext.ReplEditorFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"/>
+                                    </Style>
+                                </StackPanel.Resources>
                                 <editor:RoslynCodeEditor Margin="5"
                                                          IsReadOnly="{Binding IsReadOnly}"
                                                          ShowLineNumbers="False"
-                                                         FontSize="{Binding ReplEditorFontSize}"
                                                          HorizontalScrollBarVisibility="Disabled"
                                                          VerticalScrollBarVisibility="Disabled"
                                                          Loaded="ReplItem_Editor_Loaded"
                                                          PreviewKeyDown="ReplItem_Editor_PreviewKeyDown"
                                                          />
-                                <TextBlock Text="{Binding OutputText}" TextWrapping="Wrap" FontSize="{Binding ReplOutputFontSize}"/>
-                                <TextBlock Text="{Binding Result}" TextWrapping="Wrap" FontSize="{Binding ReplOutputFontSize}"/>
+                                <StackPanel>
+                                    <StackPanel.Resources>
+                                        <Style TargetType="TextBox">
+                                            <Style.Triggers>
+                                                <Trigger Property="Text" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                            <Setter Property="FontSize" Value="{Binding DataContext.ReplOutputFontSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"/>
+                                            <Setter Property="MaxHeight" Value="{Binding DataContext.ReplOutputMaxHeight, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"/>
+                                            <Setter Property="IsReadOnly" Value="True"/>
+                                            <Setter Property="TextWrapping" Value="Wrap"/>
+                                            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </StackPanel.Resources>
+                                    <TextBox Text="{Binding OutputText}"/>
+                                    <TextBox Text="{Binding Result}"/>
+                                </StackPanel>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -98,6 +119,8 @@
                         <xctk:IntegerUpDown Value="{Binding ReplEditorFontSize}"/>
                         <Label Content="Output FontSize:"/>
                         <xctk:IntegerUpDown Value="{Binding ReplOutputFontSize}"/>
+                        <Label Content="Output MaxHeight:"/>
+                        <xctk:IntegerUpDown Value="{Binding ReplOutputMaxHeight}"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
