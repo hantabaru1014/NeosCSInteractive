@@ -4,6 +4,11 @@ A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https
 
 **Currently in WIP!!**
 
+## REPLでの操作方法
+- Enterで実行
+- Shift+Enterで改行
+- Ctrl+UpArrow/DownArrowで履歴の呼び出し
+
 ## Memo
 - System.Collections.Immutable.dllのバージョン競合問題のため、Microsoft.CodeAnalysis.CSharp.Scriptingのバージョンはあえて古いの使ってる。解決策:自前でビルド??
 - `lib/websocket-sharp.dll`はSmartPadで`BeginInvoke`関係のエラーが出たため、[このPR](https://github.com/sta/websocket-sharp/pull/712)をベースにwindowsでも`BeginInvoke`を使わないようにしたもの。

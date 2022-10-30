@@ -34,6 +34,7 @@ namespace NeosCSInteractive.SmartPad
         private string scriptDirectoryPath = "";
         private readonly ObservableCollection<ReplItemViewModel> replItemModels;
         private RoslynHostWithGlobals? replHost;
+        private int replHistoryCursor = 0;
 
         public Dictionary<string, string> ParsedCmdLineArgs { get; private set; } = new Dictionary<string, string>();
 
@@ -308,15 +309,15 @@ namespace NeosCSInteractive.SmartPad
 
         private void ReplItem_Editor_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            var editor = (RoslynCodeEditor)sender;
+            if (editor.IsCompletionWindowOpen) return;
+            var viewModel = (ReplItemViewModel)editor.DataContext;
+
             if (e.Key == Key.Enter && e.KeyboardDevice.Modifiers != ModifierKeys.Shift)
             {
                 if (webSocket is null || !webSocket.IsAlive) return;
-
-                var editor = (RoslynCodeEditor)sender;
-                if (editor.IsCompletionWindowOpen) return;
                 e.Handled = true;
 
-                var viewModel = (ReplItemViewModel)editor.DataContext;
                 if (viewModel.IsReadOnly) return;
                 viewModel.Text = editor.Text;
                 if (viewModel.TrySubmit())
@@ -326,11 +327,28 @@ namespace NeosCSInteractive.SmartPad
                     webSocket.Send(cmd.Serialize());
                 }
             }
+            else if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+            {
+                if (e.Key == Key.Up)
+                {
+                    if (replHistoryCursor + 2 > replItemModels.Count) return;
+                    if (replHistoryCursor == 0) viewModel.Text = editor.Text;
+                    replHistoryCursor++;
+                    editor.Text = replItemModels[replItemModels.Count - replHistoryCursor - 1].Text;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    if (replHistoryCursor == 0) return;
+                    replHistoryCursor--;
+                    editor.Text = replItemModels[replItemModels.Count - replHistoryCursor - 1].Text;
+                }
+            }
         }
 
         private void AddNewReplItem(ReplItemViewModel? previous = null)
         {
             if (replHost is null) return;
+            replHistoryCursor = 0;
             replItemModels.Add(new ReplItemViewModel(replHost, previous, scriptDirectoryPath));
         }
 
