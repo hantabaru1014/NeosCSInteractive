@@ -51,6 +51,7 @@
     <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.dll" DestinationFolder="$(NeosPath)nml_libs" />
     <Copy SourceFiles="$(TargetDir)Microsoft.CodeAnalysis.Scripting.dll" DestinationFolder="$(NeosPath)nml_libs" />
     <Copy SourceFiles="$(TargetDir)NeosCSInteractive.Shared.dll" DestinationFolder="$(NeosPath)nml_libs" />
+    <Exec Command="echo D | xcopy &quot;$(SolutionDir)DefaultScripts&quot; &quot;$(NeosPath)ncsi_scripts&quot; /S /y" />
     <Message Text="Copied $(TargetFileName) and dependency dlls to $(NeosPath)" Importance="high" />
   </Target>
 </Project>

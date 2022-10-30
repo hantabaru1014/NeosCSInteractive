@@ -30,4 +30,8 @@
     </Reference>
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exist &quot;$(NeosPath)Tools\$(AssemblyName)&quot; mkdir &quot;$(NeosPath)Tools\$(AssemblyName)&quot;&#xD;&#xA;echo D | xcopy &quot;$(TargetDir)&quot; &quot;$(NeosPath)Tools\$(AssemblyName)&quot; /S /y&#xD;&#xA;" />
+  </Target>
+
 </Project>
