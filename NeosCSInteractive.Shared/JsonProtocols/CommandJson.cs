@@ -13,9 +13,11 @@ namespace NeosCSInteractive.Shared.JsonProtocols
 
             // Client -> Server
             RunScript,
+            RunContinueFromResult,
 
             // Server -> Client
             Output,
+            ExecutionResult,
             EnvironmentInfo,
             CloseClient,
         }

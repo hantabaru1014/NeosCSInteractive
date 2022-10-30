@@ -81,5 +81,33 @@ namespace NeosCSInteractive.SmartPad
                 }
             }
         }
+
+        private int _ReplEditorFontSize = 16;
+        public int ReplEditorFontSize
+        {
+            get => _ReplEditorFontSize;
+            set
+            {
+                if (_ReplEditorFontSize != value)
+                {
+                    _ReplEditorFontSize = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
+        private int _ReplOutputFontSize = 14;
+        public int ReplOutputFontSize
+        {
+            get => _ReplOutputFontSize;
+            set
+            {
+                if (_ReplOutputFontSize != value)
+                {
+                    _ReplOutputFontSize = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
     }
 }

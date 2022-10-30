@@ -49,7 +49,27 @@
             </DockPanel>
         </TabItem>
         <TabItem Header="REPL">
-
+            <ScrollViewer>
+                <ItemsControl x:Name="ReplItems">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <editor:RoslynCodeEditor Margin="5"
+                                                         IsReadOnly="{Binding IsReadOnly}"
+                                                         ShowLineNumbers="False"
+                                                         FontSize="{Binding ReplEditorFontSize}"
+                                                         HorizontalScrollBarVisibility="Disabled"
+                                                         VerticalScrollBarVisibility="Disabled"
+                                                         Loaded="ReplItem_Editor_Loaded"
+                                                         PreviewKeyDown="ReplItem_Editor_PreviewKeyDown"
+                                                         />
+                                <TextBlock Text="{Binding OutputText}" TextWrapping="Wrap" FontSize="{Binding ReplOutputFontSize}"/>
+                                <TextBlock Text="{Binding Result}" TextWrapping="Wrap" FontSize="{Binding ReplOutputFontSize}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </TabItem>
         <TabItem Header="Options">
             <StackPanel Margin="15">
@@ -70,6 +90,14 @@
                         <xctk:IntegerUpDown Value="{Binding ScriptEditorFontSize}" />
                         <Label Content="Output FontSize:"/>
                         <xctk:IntegerUpDown Value="{Binding ScriptOutputFontSize}" />
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="REPL Panel">
+                    <StackPanel>
+                        <Label Content="Editor FontSize:"/>
+                        <xctk:IntegerUpDown Value="{Binding ReplEditorFontSize}"/>
+                        <Label Content="Output FontSize:"/>
+                        <xctk:IntegerUpDown Value="{Binding ReplOutputFontSize}"/>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

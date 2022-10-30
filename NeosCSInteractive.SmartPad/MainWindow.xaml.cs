@@ -20,6 +20,7 @@ using NeosCSInteractive.Shared;
 using WebSocketSharp;
 using NeosCSInteractive.Shared.JsonProtocols;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Collections.ObjectModel;
 
 namespace NeosCSInteractive.SmartPad
 {
@@ -31,16 +32,21 @@ namespace NeosCSInteractive.SmartPad
         private MainWindowViewModel viewModel = new MainWindowViewModel();
         private WebSocket? webSocket;
         private string scriptDirectoryPath = "";
+        private readonly ObservableCollection<ReplItemViewModel> replItemModels;
+        private RoslynHostWithGlobals? replHost;
 
         public Dictionary<string, string> ParsedCmdLineArgs { get; private set; } = new Dictionary<string, string>();
 
         public MainWindow()
         {
             InitializeComponent();
+
+            replItemModels = new ObservableCollection<ReplItemViewModel>();
             DataContext = viewModel;
+            ReplItems.ItemsSource = replItemModels;
         }
 
-        private void InitializeScriptEditor(string scriptDirectory, string[] imports, string[] referenceAssemblies)
+        private void InitializeRoslynHost(string scriptDirectory, string[] imports, string[] referenceAssemblies)
         {
             scriptDirectoryPath = scriptDirectory;
             var scriptHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
@@ -53,10 +59,21 @@ namespace NeosCSInteractive.SmartPad
             ));
             scriptEditor.Initialize(scriptHost, new ClassificationHighlightColors(), scriptDirectory, scriptEditor.Text);
             AddOutputMessage(new LogMessage(LogMessage.MessageType.Info, "Ready"));
+
+            replHost = new RoslynHostWithGlobals(additionalAssemblies: new[]
+            {
+                Assembly.Load("RoslynPad.Roslyn.Windows"),
+                Assembly.Load("RoslynPad.Editor.Windows"),
+            }, RoslynHostReferences.NamespaceDefault.With(
+                imports: imports,
+                assemblyPathReferences: referenceAssemblies
+            ));
+            AddNewReplItem();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            ((MainWindow)sender).Loaded -= Window_Loaded;
             ParseCommandLineArgs();
             CmdLineArgsToViewModel();
 
@@ -131,6 +148,10 @@ namespace NeosCSInteractive.SmartPad
         private void WebSocket_OnOpen(object? sender, EventArgs e)
         {
             viewModel.IsConnected = true;
+            Dispatcher.Invoke(() =>
+            {
+                ClearReplItems();
+            });
             AddOutputMessage(new LogMessage(LogMessage.MessageType.Info, "[WebSocket] Connected"));
         }
 
@@ -145,6 +166,8 @@ namespace NeosCSInteractive.SmartPad
                         var args = command.GetArgs<OutputArgs>();
                         if (args.ConsoleId == "SmartPad:Script")
                             AddOutputMessage(args.Message);
+                        if (args.ConsoleId == "SmartPad:REPL")
+                            Dispatcher.Invoke(() => replItemModels.LastOrDefault()?.AddOutputMessage(args.Message));
                         break;
                     case CommandJson.CommandType.CloseClient:
                         CloseWindow();
@@ -153,7 +176,16 @@ namespace NeosCSInteractive.SmartPad
                         Dispatcher.Invoke(() =>
                         {
                             var args2 = command.GetArgs<EnvironmentInfoArgs>();
-                            InitializeScriptEditor(args2.ScriptDirectory, args2.Imports, args2.ReferenceAssemblies);
+                            InitializeRoslynHost(args2.ScriptDirectory, args2.Imports, args2.ReferenceAssemblies);
+                        });
+                        break;
+                    case CommandJson.CommandType.ExecutionResult:
+                        var args3 = command.GetArgs<ExecutionResultArgs>();
+                        if (args3.ConsoleId != "SmartPad:REPL") break;
+                        Dispatcher.Invoke(() =>
+                        {
+                            replItemModels.LastOrDefault()?.SetResult(args3.ResultId, args3.Result, args3.IsError);
+                            AddNewReplItem(replItemModels.LastOrDefault());
                         });
                         break;
                     default:
@@ -252,6 +284,59 @@ namespace NeosCSInteractive.SmartPad
             {
                 File.WriteAllText(dialog.FileName, scriptEditor.Text, Encoding.UTF8);
             }
+        }
+
+        private void ReplItem_Editor_Loaded(object sender, RoutedEventArgs e)
+        {
+            var editor = (RoslynCodeEditor)sender;
+            editor.Loaded -= ReplItem_Editor_Loaded;
+            editor.Focus();
+
+            var viewModel = (ReplItemViewModel)editor.DataContext;
+            var previous = viewModel.LastGoodPrevious;
+            if (previous?.Id is not null)
+            {
+                editor.CreatingDocument += (o, args) =>
+                {
+                    args.DocumentId = replHost?.AddRelatedDocument(previous.Id, new DocumentCreationArgs(
+                        args.TextContainer, scriptDirectoryPath, args.ProcessDiagnostics, args.TextContainer.UpdateText));
+                };
+            }
+            var documentId = editor.Initialize(replHost!, new ClassificationHighlightColors(), scriptDirectoryPath, string.Empty);
+            viewModel.Initialize(documentId);
+        }
+
+        private void ReplItem_Editor_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && e.KeyboardDevice.Modifiers != ModifierKeys.Shift)
+            {
+                if (webSocket is null || !webSocket.IsAlive) return;
+
+                var editor = (RoslynCodeEditor)sender;
+                if (editor.IsCompletionWindowOpen) return;
+                e.Handled = true;
+
+                var viewModel = (ReplItemViewModel)editor.DataContext;
+                if (viewModel.IsReadOnly) return;
+                viewModel.Text = editor.Text;
+                if (viewModel.TrySubmit())
+                {
+                    var cmd = new CommandJson(CommandJson.CommandType.RunContinueFromResult,
+                        new RunContinueFromResultArgs("SmartPad:REPL", viewModel.Text, viewModel.LastGoodPrevious?.ResultId ?? -1));
+                    webSocket.Send(cmd.Serialize());
+                }
+            }
+        }
+
+        private void AddNewReplItem(ReplItemViewModel? previous = null)
+        {
+            if (replHost is null) return;
+            replItemModels.Add(new ReplItemViewModel(replHost, previous, scriptDirectoryPath));
+        }
+
+        private void ClearReplItems()
+        {
+            replItemModels.Clear();
         }
     }
 }

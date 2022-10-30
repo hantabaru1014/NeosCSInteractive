@@ -33,6 +33,19 @@ namespace NeosCSInteractive
                                 Send(outCmd.Serialize());
                             });
                             break;
+                        case CommandJson.CommandType.RunContinueFromResult:
+                            var args2 = command.GetArgs<RunContinueFromResultArgs>();
+                            ScriptUtils.RunContinueFromResult(args2.Code, args2.BaseResultId, message =>
+                            {
+                                var outCmd = new CommandJson(CommandJson.CommandType.Output, new OutputArgs(args2.ConsoleId, message));
+                                Send(outCmd.Serialize());
+                            }, result =>
+                            {
+                                var outCmd = new CommandJson(CommandJson.CommandType.ExecutionResult,
+                                    new ExecutionResultArgs(args2.ConsoleId, result.ResultId, result.Result, result.IsError));
+                                Send(outCmd.Serialize());
+                            }, false);
+                            break;
                         default:
                             break;
                     }
@@ -67,6 +80,7 @@ namespace NeosCSInteractive
         public string UserId { get => "smartpad"; }
         public string Password { get; private set; }
         public bool AutoStop { get; set; }
+        public int ClientCount { get => server?.WebSocketServices.SessionCount ?? 0; }
 
         public SmartPadConnector(int port, string password, bool autoStop)
         {

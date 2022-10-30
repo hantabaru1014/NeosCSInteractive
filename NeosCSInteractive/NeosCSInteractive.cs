@@ -52,6 +52,14 @@ namespace NeosCSInteractive
                 {
                     padConnector.AutoStop = !alwaysRunning;
                 }
+                if (config.GetValue(AlwaysRunningServer))
+                {
+                    CreateConnectorIfNotExist();
+                }
+                else if (padConnector?.ClientCount == 0)
+                {
+                    padConnector?.Stop();
+                }
             }
         }
 
