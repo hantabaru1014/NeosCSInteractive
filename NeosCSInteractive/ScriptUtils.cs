@@ -7,7 +7,6 @@ using FrooxEngine;
 using Microsoft.CodeAnalysis;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Microsoft.CodeAnalysis.CSharp.Scripting.Hosting;
 
@@ -60,6 +59,8 @@ namespace NeosCSInteractive
 
         private static AppendOnlySafeList<ScriptState<object>> scriptResults = new();
         private static PrintOptions PrintOptions { get; } = new PrintOptions { MemberDisplayFormat = MemberDisplayFormat.SeparateLines };
+        private static MethodInfo HasSubmissionResult { get; } =
+                typeof(Compilation).GetMethod(nameof(HasSubmissionResult), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
         public static string[] Imports { get => new[] { "System", "FrooxEngine", "BaseX" }; }
 
@@ -99,7 +100,8 @@ namespace NeosCSInteractive
                     if (onFinished is null) return;
                     var id = scriptResults.Add(state);
                     var isError = state.Exception is not null;
-                    var result = isError ? FormatException(state.Exception) : FormatObject(state.ReturnValue);
+                    var hasResult = (bool)HasSubmissionResult.Invoke(script.GetCompilation(), null);
+                    var result = isError ? FormatException(state.Exception) : hasResult ? FormatObject(state.ReturnValue) : string.Empty;
                     onFinished.Invoke(new ExecutionResult(id, result, isError));
                 }
                 catch (CompilationErrorException ex)
@@ -140,7 +142,21 @@ namespace NeosCSInteractive
                 {
                     Engine.Current.WorldManager.FocusedWorld.RootSlot.RunSynchronously(async () =>
                     {
-                        var state = await scriptResults[baseResultId].Script.ContinueWith(code).RunFromAsync(scriptResults[baseResultId], ex =>
+                        var script = scriptResults[baseResultId].Script.ContinueWith(code);
+                        var diagnostics = script.Compile().Where(d => d.Severity == DiagnosticSeverity.Error);
+                        if (diagnostics.Count() > 0)
+                        {
+                            if (onFinished is null)
+                            {
+                                onLog.Invoke(new LogMessage(LogMessage.MessageType.Error, "[CompileError] " + FormatObject(diagnostics.First())));
+                            }
+                            else
+                            {
+                                onFinished.Invoke(new ExecutionResult(-2, "[CompileError] " + FormatObject(diagnostics.First()), true));
+                            }
+                            return;
+                        }
+                        var state = await script.RunFromAsync(scriptResults[baseResultId], ex =>
                         {
                             if (!catchException) return false;
                             onLog.Invoke(new LogMessage(LogMessage.MessageType.Error, ex.Message));
@@ -149,7 +165,8 @@ namespace NeosCSInteractive
                         if (onFinished is null) return;
                         var id = scriptResults.Add(state);
                         var isError = state.Exception is not null;
-                        var result = isError ? FormatException(state.Exception) : FormatObject(state.ReturnValue);
+                        var hasResult = (bool)HasSubmissionResult.Invoke(script.GetCompilation(), null);
+                        var result = isError ? FormatException(state.Exception) : hasResult ? FormatObject(state.ReturnValue) : string.Empty;
                         onFinished.Invoke(new ExecutionResult(id, result, isError));
                     });
                 }
@@ -189,7 +206,6 @@ namespace NeosCSInteractive
 
         public static string FormatObject(object o)
         {
-            if (o is null) return string.Empty;
             return CSharpObjectFormatter.Instance.FormatObject(o, PrintOptions);
         }
     }
